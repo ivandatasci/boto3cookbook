@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Ivan Gregoretti, PhD. March 2017.
+# Ivan Gregoretti, PhD. April 2017.
 
 import subprocess
 import boto3
@@ -113,10 +113,17 @@ else:
 
 # Launch an instance
 # Note: Instance types m4.large and t2.xlarge are a good starting point for
-# computational biology
+# computational biology.
+# Important: include UserData to execute dnf update -y
+my_user_data = """#!/bin/bash
+sudo dnf update -y
+sudo dnf install htop nano -y
+"""
+
 my_ec2instance = ec2re.create_instances(ImageId='ami-56a08841',
         MinCount=1, MaxCount=1,
         KeyName=my_keypair.name,
+        UserData=my_user_data,
         InstanceType='m4.large',
         BlockDeviceMappings=[{'DeviceName':'/dev/sda1', 'Ebs':{'VolumeSize':96, 'DeleteOnTermination':True, 'VolumeType':'gp2'}}],
         NetworkInterfaces=[{'SubnetId':my_subnetid_df.loc['us-east-1a','Public'], 'Groups':[my_security_group.id], 'DeviceIndex':0, 'AssociatePublicIpAddress':True}],
@@ -124,7 +131,7 @@ my_ec2instance = ec2re.create_instances(ImageId='ami-56a08841',
         )[0]
 
 # Tag immediately my instance
-my_ec2instance.create_tags(Tags=[{'Key':'Name', 'Value':'research-vm-00'},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
+my_ec2instance.create_tags(Tags=[{'Key':'Name', 'Value':'formosa-00'},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
 
 # Tag immediately its attached volume
 my_ec2instance.wait_until_exists(Filters=[{'Name':'block-device-mapping.status','Values':['attached']}])
@@ -137,6 +144,11 @@ ec2cl.describe_instances(Filters=[{'Name':'instance-id', 'Values':[my_ec2instanc
 
 # Refresh object to get the current state (pending, running, stopped, terminated)
 my_ec2instance.reload()
+
+# Display status checks 1 and 2
+# System status (AWS systems required to use this instance)
+# Instance status (checks my software and network configuration)
+jmespath.search('InstanceStatuses[*].[SystemStatus.Status,InstanceStatus.Status] | []', ec2cl.describe_instance_status(InstanceIds=[my_ec2instance.id]))
 
 # Stop but do not yet terminate the template instance
 my_ec2instance.wait_until_running()
@@ -155,16 +167,17 @@ my_ec2instance.stop()
 # Create a snapshot of the stopped template instance
 # Note: The argument Description is good practice but not required.
 my_ec2instance.wait_until_stopped()
-my_ec2snapshot = ec2re.create_snapshot( VolumeId=my_ec2volume_id, Description='Root device snapshot of bare-bones Fedora 25 for Computational Biology' )
+my_ec2snapshot = ec2re.create_snapshot( VolumeId=my_ec2volume_id, Description='Root device snapshot of Fedora 25 for Computational Biology' )
 
 # tag the snapshot
 my_ec2snapshot.create_tags(Tags=[{'Key':'Name', 'Value':jmespath.search('[?Key==`Name`].Value | [0]', my_ec2instance.tags) + '-snap'},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
 
 
+# Create a custom image from that root device snapshot
 my_ec2snapshot.wait_until_completed()
 my_ec2image = ec2re.register_image(
     Name='formosa-00',
-    Description='Bare-bones Fedora 25 for Computational Biology',
+    Description='Fedora 25 for Computational Biology',
     Architecture='x86_64',
     RootDeviceName='/dev/sda1',
     BlockDeviceMappings=[
@@ -184,42 +197,25 @@ my_ec2image = ec2re.register_image(
 my_ec2image.create_tags(Tags=[{'Key':'Name', 'Value':my_ec2image.name},{'Key':'Platform', 'Value':'Fedora 25'},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
 
 
+# Example of how to find the image id by querying and filtering by known attributes
+# Note: both examples result in the same output but the second example is much
+# faster because it requests a server side pre-filtering of the matches.
+jmespath.search('Images[*] | [?!( Public )] | [?Tags[?Key==`Department` && Value==`Computational Biology Research`]]', ec2cl.describe_images())
+jmespath.search('Images[*] | [?!( Public )]', ec2cl.describe_images(Filters=[{'Name':'tag:Department', 'Values':['Computational Biology Research']}]))
+# ImageId 'ami-52e47144'
+
+
 # Deregister image if needed (delete VM image)
-my_ec2image.deregister()
-
-
-
-################################################################################
-# Optionally, continue working with the template instance
-################################################################################
-
-# terminate the template instance
-#my_ec2instance.terminate()
-
-# Restart the instance
-# Note: Instances without Elastic IP addresses get assigned a different address
-# upon restarting. Get the new IP attribute to be able to reconnect.
-my_ec2instance.start()
-my_ec2instance.wait_until_running()
-my_ec2instance.public_ip_address
-
-
-# <-- work here. For example, set DNS server IP addresses.
+# my_ec2image.deregister()
 
 
 # terminate the template instance
 my_ec2instance.terminate()
 
 
-# Find the image id by querying and filtering by known attributes
-jmespath.search('Images[*] | [?!( Public )] | [?Tags[?Key==`Department` && Value==`Computational Biology Research`]]', ec2cl.describe_images())
-# ImageId 'ami-15f37a03'
-
-
-### LEFT HERE ###
-# Now we need to try and test if it launches successfully.
-
-my_ec2instance = ec2re.create_instances(ImageId='ami-15f37a03',
+# Launch an instance from the newly created custom image
+my_ec2image.wait_until_exists()
+my_ec2instance = ec2re.create_instances(ImageId=my_ec2image.id,
         MinCount=1, MaxCount=1,
         KeyName=my_keypair.name,
         InstanceType='m4.large',
@@ -227,6 +223,42 @@ my_ec2instance = ec2re.create_instances(ImageId='ami-15f37a03',
         NetworkInterfaces=[{'SubnetId':my_subnetid_df.loc['us-east-1a','Public'], 'Groups':[my_security_group.id], 'DeviceIndex':0, 'AssociatePublicIpAddress':True}],
         InstanceInitiatedShutdownBehavior='terminate'
         )[0]
+
+# Tag immediately my instance
+my_ec2instance.create_tags(Tags=[{'Key':'Name', 'Value':'formosa-01'},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
+
+# Tag immediately its attached volume
+my_ec2instance.wait_until_exists(Filters=[{'Name':'block-device-mapping.status','Values':['attached']}])
+my_ec2volume_id = my_ec2instance.block_device_mappings[0]['Ebs']['VolumeId']
+my_ec2volume_name = jmespath.search('[?Key==`Name`].Value | [0]', my_ec2instance.tags) + '-vol'
+ec2re.Volume(  my_ec2volume_id  ).create_tags(Tags=[{'Key':'Name', 'Value':my_ec2volume_name},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
+
+
+# Refresh object to get the current state (pending, running, stopped, terminated)
+my_ec2instance.reload()
+
+
+# Display status checks 1 and 2
+# 1) System status (AWS systems required to use this instance)
+# 2) Instance status (checks my software and network configuration)
+jmespath.search('InstanceStatuses[*].[SystemStatus.Status,InstanceStatus.Status] | []', ec2cl.describe_instance_status(InstanceIds=[my_ec2instance.id]))
+
+
+
+
+################################################################################
+# Done
+################################################################################
+
+# Display IP address of DNS name
+my_ec2instance.public_ip_address
+my_ec2instance.public_dns_name
+
+
+
+
+
+
 
 
 
@@ -242,6 +274,9 @@ jmespath.search('Volumes[?Size==`64`]', ec2cl.describe_volumes())
 
 # Identify instances by tag
 jmespath.search('Reservations[*].Instances[?Tags[?Key==`Owner` && Value==`' + iam_user_name + '`]] | []', ec2cl.describe_instances())
+
+# Identify instances by tag and state
+jmespath.search('Reservations[*].Instances[] | [?Tags[?Key==`Owner` && Value==`' + iam_user_name + '`]] | [?State.Name==`running`] | []', ec2cl.describe_instances())
 
 # Identify a volume attached to my ec2 instance (there could be more than one)
 jmespath.search('[].Ebs[].VolumeId | [0]', my_ec2instance.block_device_mappings)
