@@ -174,44 +174,6 @@ my_ec2snapshot.create_tags(Tags=[{'Key':'Name', 'Value':jmespath.search('[?Key==
 
 
 # Create a custom image from that root device snapshot
-my_ec2snapshot.wait_until_completed()
-my_ec2image = ec2re.register_image(
-    Name='formosa-00',
-    Description='Fedora 25 for Computational Biology',
-    Architecture='x86_64',
-    RootDeviceName='/dev/sda1',
-    BlockDeviceMappings=[
-        {
-            'DeviceName': '/dev/sda1',
-            'Ebs': {
-                'SnapshotId': my_ec2snapshot.id,
-                'DeleteOnTermination': True,
-                'VolumeType': 'gp2'
-            }
-        }
-    ],
-    VirtualizationType='hvm',
-)
-
-# Tag image
-my_ec2image.create_tags(Tags=[{'Key':'Name', 'Value':my_ec2image.name},{'Key':'Platform', 'Value':'Fedora 25'},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
-
-
-# Example of how to find the image id by querying and filtering by known attributes
-# Note: both examples result in the same output but the second example is much
-# faster because it requests a server side pre-filtering of the matches.
-jmespath.search('Images[*] | [?!( Public )] | [?Tags[?Key==`Department` && Value==`Computational Biology Research`]]', ec2cl.describe_images())
-jmespath.search('Images[*] | [?!( Public )]', ec2cl.describe_images(Filters=[{'Name':'tag:Department', 'Values':['Computational Biology Research']}]))
-# ImageId 'ami-52e47144'
-
-
-# Deregister image if needed (delete VM image)
-# my_ec2image.deregister()
-
-
-# terminate the template instance
-my_ec2instance.terminate()
-
 
 # Launch an instance from the newly created custom image
 my_ec2image.wait_until_exists()
@@ -253,6 +215,65 @@ jmespath.search('InstanceStatuses[*].[SystemStatus.Status,InstanceStatus.Status]
 # Display IP address of DNS name
 my_ec2instance.public_ip_address
 my_ec2instance.public_dns_name
+
+
+
+################################################################################
+# Complete upgrade cycle: running, stopping, snapshoting, imaging, launching
+################################################################################
+
+# Steps
+# running formosa-01
+# creation of snapshot formosa-01-snap and creation of its image formosa-01
+# launching formosa-02 (from image formosa-01)
+
+my_ec2instance.stop()
+my_ec2volume_id = my_ec2instance.block_device_mappings[0]['Ebs']['VolumeId']
+my_ec2volume_name = jmespath.search('[?Key==`Name`].Value | [0]', my_ec2instance.tags) + '-vol'
+ec2re.Volume(  my_ec2volume_id  ).create_tags(Tags=[{'Key':'Name', 'Value':my_ec2volume_name},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
+my_ec2snapshot = ec2re.create_snapshot( VolumeId=my_ec2volume_id, Description='Root device snapshot of Fedora 25 for Computational Biology' )
+my_ec2snapshot.create_tags(Tags=[{'Key':'Name', 'Value':jmespath.search('[?Key==`Name`].Value | [0]', my_ec2instance.tags) + '-snap'},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
+
+my_ec2snapshot.wait_until_completed()
+my_ec2image = ec2re.register_image(
+    Name='formosa-01',
+    Description='Fedora 25 for Computational Biology',
+    Architecture='x86_64',
+    RootDeviceName='/dev/sda1',
+    BlockDeviceMappings=[
+        {
+            'DeviceName': '/dev/sda1',
+            'Ebs': {
+                'SnapshotId': my_ec2snapshot.id,
+                'DeleteOnTermination': True,
+                'VolumeType': 'gp2'
+            }
+        }
+    ],
+    VirtualizationType='hvm',
+)
+my_ec2image.create_tags(Tags=[{'Key':'Name', 'Value':my_ec2image.name},{'Key':'Platform', 'Value':'Fedora 25'},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
+
+
+jmespath.search('Images[*] | [?!( Public )] | [?Tags[?Key==`Department` && Value==`Computational Biology Research`]]', ec2cl.describe_images())
+jmespath.search('Images[*] | [?!( Public )]', ec2cl.describe_images(Filters=[{'Name':'tag:Department', 'Values':['Computational Biology Research']}]))
+my_ec2instance.terminate()
+my_ec2image.wait_until_exists()
+my_ec2instance = ec2re.create_instances(ImageId=my_ec2image.id,
+        MinCount=1, MaxCount=1,
+        KeyName=my_keypair.name,
+        InstanceType='m4.large',
+        BlockDeviceMappings=[{'DeviceName':'/dev/sda1', 'Ebs':{'VolumeSize':96, 'DeleteOnTermination':True, 'VolumeType':'gp2'}}],
+        NetworkInterfaces=[{'SubnetId':my_subnetid_df.loc['us-east-1a','Public'], 'Groups':[my_security_group.id], 'DeviceIndex':0, 'AssociatePublicIpAddress':True}],
+        InstanceInitiatedShutdownBehavior='terminate'
+        )[0]
+my_ec2instance.create_tags(Tags=[{'Key':'Name', 'Value':'formosa-02'},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
+my_ec2instance.wait_until_exists(Filters=[{'Name':'block-device-mapping.status','Values':['attached']}])
+my_ec2volume_id = my_ec2instance.block_device_mappings[0]['Ebs']['VolumeId']
+my_ec2volume_name = jmespath.search('[?Key==`Name`].Value | [0]', my_ec2instance.tags) + '-vol'
+ec2re.Volume(  my_ec2volume_id  ).create_tags(Tags=[{'Key':'Name', 'Value':my_ec2volume_name},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
+my_ec2instance.reload()
+jmespath.search('InstanceStatuses[*].[SystemStatus.Status,InstanceStatus.Status] | []', ec2cl.describe_instance_status(InstanceIds=[my_ec2instance.id]))
 
 
 
