@@ -278,6 +278,9 @@ jmespath.search('Reservations[*].Instances[?Tags[?Key==`Owner` && Value==`' + ia
 # Identify instances by tag and state
 jmespath.search('Reservations[*].Instances[] | [?Tags[?Key==`Owner` && Value==`' + iam_user_name + '`]] | [?State.Name==`running`] | []', ec2cl.describe_instances())
 
+# Display table of instance IDs, running states and their names
+jmespath.search('Reservations[*].Instances[*] | [][InstanceId, State.Name, Tags[?Key==`Owner`].Value]', ec2cl.describe_instances(Filters=[{'Name':'tag:Department', 'Values':['Computational Biology Research']}]))
+
 # Identify a volume attached to my ec2 instance (there could be more than one)
 jmespath.search('[].Ebs[].VolumeId | [0]', my_ec2instance.block_device_mappings)
 
