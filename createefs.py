@@ -227,8 +227,18 @@ my_efsservers_df['dns_name'] = [row[1] + '.' + my_efs_id + '.efs.' + row[1][:-1]
 
 # sudo mkdir /mnt/e0
 # sudo chmod 777 /mnt/e0
+
+# Mounting manually
 # sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 us-east-1a.fs-a449faed.efs.us-east-1.amazonaws.com:/ /mnt/e0
+# or
 # sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 fs-a449faed.efs.us-east-1.amazonaws.com:/ /mnt/e0
+# or
 # sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 10.50.250.168:/ /mnt/e0
+
+# Mounting automatically at boot time
+# us-east-1a.fs-a449faed.efs.us-east-1.amazonaws.com:/ /mnt/e0 nfs4 rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0
+# or
+# fs-a449faed.efs.us-east-1.amazonaws.com:/ /mnt/e0 nfs4 rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0
+
 
 
