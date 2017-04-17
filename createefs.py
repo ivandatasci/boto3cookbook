@@ -60,7 +60,7 @@ my_subnetid_df.loc['us-east-1e','Private'] = jmespath.search('Subnets[?VpcId==`'
 
 
 ################################################################################
-# Identify or create security group
+# Identify or create security groups
 ################################################################################
 
 # Identify my own IP address
@@ -68,6 +68,19 @@ my_subnetid_df.loc['us-east-1e','Private'] = jmespath.search('Subnets[?VpcId==`'
 my_ip_child = subprocess.run(['curl', '--silent', 'http://checkip.amazonaws.com'], stdout=subprocess.PIPE)
 my_ip       = my_ip_child.stdout.decode('utf-8').rstrip()
 
+
+# Note: The logic below will either identify or create two security groups
+# 1) Security group for the EC2 instance
+#        my_security_group_name
+#        my_security_group_id
+# 2) Security group for the EFS mount target
+#        my_security_group_efs_name
+#        my_security_group_efs_id
+
+
+########################################
+# 1) Security group for the EC2 instance
+########################################
 
 # Determine whether the compbio-research-00-sg security group exists
 my_security_group_name = 'compbio-research-00-sg'
@@ -98,8 +111,56 @@ else:
     print('Security group ' + my_security_group.group_name + ' has now been created.')
 
 
-# If desired, delete the security group
-#ec2cl.delete_security_group(GroupId=my_security_group.id)
+########################################
+# 2) Security group for the EFS mount target
+########################################
+
+# Determine whether the compbio-research-efs -00-sg security group exists
+my_security_group_efs_name = 'compbio-research-efs-00-sg'
+
+if my_security_group_efs_name in jmespath.search('SecurityGroups[*].GroupName', ec2cl.describe_security_groups()):
+
+    print('Security group ' + my_security_group_efs_name + ' already exists.')
+
+    # get the security group id (string)
+    my_security_group_efs_id = jmespath.search('SecurityGroups[?GroupName==`' + my_security_group_efs_name + '`].GroupId',
+            ec2cl.describe_security_groups(Filters=[{'Name':'vpc-id', 'Values':[my_vpcid] }])
+            )[0]
+
+    # get the security group (resource object)
+    my_security_group_efs = ec2re.SecurityGroup( my_security_group_efs_id   )
+
+else:
+
+    print('Security group ' + my_security_group_efs_name + ' does not exist. Creating it...')
+
+    # Create a security group
+    my_security_group_efs = ec2re.create_security_group(GroupName=my_security_group_efs_name, Description='Allows access to Computational Biology Research EFS', VpcId=my_vpcid)
+    # Add a tag
+    my_security_group_efs.create_tags(Tags=[{'Key': 'Name', 'Value': my_security_group_efs_name + '-name'}, {'Key':'Owner', 'Value':iam_user_name}, {'Key': 'Department', 'Value': 'Computational Biology Research'}])
+    # Set security group attributes
+    my_security_group_efs.authorize_ingress(IpPermissions=[
+        {
+            'IpProtocol':'tcp',
+            'FromPort':2049,
+            'ToPort':2049,
+            'UserIdGroupPairs':[
+                {
+                    'UserId':'af8bea628cb1eda67ee4016e51034c7272cdf7c062a62107157648f175214a25',
+                    'GroupId':my_security_group_id,
+                    'VpcId':my_vpcid
+                }
+            ]
+        }
+        ]
+    )
+
+    print('Security group ' + my_security_group_efs.group_name + ' has now been created.')
+
+
+# If desired, delete the security groups
+#ec2cl.delete_security_group(GroupId=my_security_group.id    )
+#ec2cl.delete_security_group(GroupId=my_security_group_efs.id)
 
 
 
@@ -131,10 +192,10 @@ except:
 
 # Now that the file system exists, create a mount target in each availability
 # zone. Only one mount target can be created per availability zone.
-#efscl.create_mount_target(FileSystemId=my_efs_id, SubnetId=my_subnetid_df.loc['us-east-1a','Public' ], SecurityGroups=[ my_security_group.id ])
-efscl.create_mount_target(FileSystemId=my_efs_id, SubnetId=my_subnetid_df.loc['us-east-1a','Private'], SecurityGroups=[ my_security_group.id ])
-#efscl.create_mount_target(FileSystemId=my_efs_id, SubnetId=my_subnetid_df.loc['us-east-1e','Public' ], SecurityGroups=[ my_security_group.id ])
-efscl.create_mount_target(FileSystemId=my_efs_id, SubnetId=my_subnetid_df.loc['us-east-1e','Private'], SecurityGroups=[ my_security_group.id ])
+#efscl.create_mount_target(FileSystemId=my_efs_id, SubnetId=my_subnetid_df.loc['us-east-1a','Public' ], SecurityGroups=[ my_security_group_efs.id ])
+efscl.create_mount_target(FileSystemId=my_efs_id, SubnetId=my_subnetid_df.loc['us-east-1a','Private'], SecurityGroups=[ my_security_group_efs.id ])
+#efscl.create_mount_target(FileSystemId=my_efs_id, SubnetId=my_subnetid_df.loc['us-east-1e','Public' ], SecurityGroups=[ my_security_group_efs.id ])
+efscl.create_mount_target(FileSystemId=my_efs_id, SubnetId=my_subnetid_df.loc['us-east-1e','Private'], SecurityGroups=[ my_security_group_efs.id ])
 
 
 
@@ -154,9 +215,9 @@ my_efsservers_df = pd.DataFrame({'ip':my_azip_df['IpAddress'].tolist(), 'dns_nam
 my_efsservers_df['dns_name'] = [row[1] + '.' + my_efs_id + '.efs.' + row[1][:-1] + '.amazonaws.com' for row in my_azip_df.itertuples()]
 # Usage examples:
 # my_efsservers_df.loc['us-east-1a','dns_name']
-# 'us-east-1a.fs-eb1aaba2.efs.us-east-1.amazonaws.com'
+# 'us-east-1a.fs-a449faed.efs.us-east-1.amazonaws.com'
 # my_efsservers_df.loc['us-east-1a','ip']
-# '10.50.250.202'
+# '10.50.250.168'
 
 
 
@@ -166,8 +227,8 @@ my_efsservers_df['dns_name'] = [row[1] + '.' + my_efs_id + '.efs.' + row[1][:-1]
 
 # sudo mkdir /mnt/e0
 # sudo chmod 777 /mnt/e0
-# sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 us-east-1a.fs-eb1aaba2.efs.us-east-1.amazonaws.com:/ /mnt/e0
-# sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 fs-eb1aaba2.efs.us-east-1.amazonaws.com:/ /mnt/e0
-# sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 10.50.250.202:/ /mnt/e0
+# sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 us-east-1a.fs-a449faed.efs.us-east-1.amazonaws.com:/ /mnt/e0
+# sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 fs-a449faed.efs.us-east-1.amazonaws.com:/ /mnt/e0
+# sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 10.50.250.168:/ /mnt/e0
 
 
