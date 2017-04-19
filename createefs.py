@@ -151,11 +151,28 @@ else:
                     'VpcId':my_vpcid
                 }
             ]
+        },
+        {
+            'IpProtocol':'tcp',
+            'FromPort':2049,
+            'ToPort':2049,
+            'IpRanges':[
+                {
+                    'CidrIp':'10.10.6.0/24'
+                },
+                {
+                    'CidrIp': my_ip + '/32'
+                }
+            ]
         }
         ]
     )
 
     print('Security group ' + my_security_group_efs.group_name + ' has now been created.')
+
+
+# Display security groups if desired
+jmespath.search('SecurityGroups[*].[GroupId,GroupName]', ec2cl.describe_security_groups(Filters=[{'Name':'vpc-id', 'Values':[my_vpcid] }]))
 
 
 # If desired, delete the security groups
@@ -215,9 +232,9 @@ my_efsservers_df = pd.DataFrame({'ip':my_azip_df['IpAddress'].tolist(), 'dns_nam
 my_efsservers_df['dns_name'] = [row[1] + '.' + my_efs_id + '.efs.' + row[1][:-1] + '.amazonaws.com' for row in my_azip_df.itertuples()]
 # Usage examples:
 # my_efsservers_df.loc['us-east-1a','dns_name']
-# 'us-east-1a.fs-a449faed.efs.us-east-1.amazonaws.com'
+# 'us-east-1a.fs-ae4efde7.efs.us-east-1.amazonaws.com'
 # my_efsservers_df.loc['us-east-1a','ip']
-# '10.50.250.168'
+# '10.50.251.144'
 
 
 
@@ -229,16 +246,17 @@ my_efsservers_df['dns_name'] = [row[1] + '.' + my_efs_id + '.efs.' + row[1][:-1]
 # sudo chmod 777 /mnt/e0
 
 # Mounting manually
-# sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 us-east-1a.fs-a449faed.efs.us-east-1.amazonaws.com:/ /mnt/e0
+# sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 us-east-1a.fs-ae4efde7.efs.us-east-1.amazonaws.com:/ /mnt/e0
 # or
-# sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 fs-a449faed.efs.us-east-1.amazonaws.com:/ /mnt/e0
+# sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 fs-ae4efde7.efs.us-east-1.amazonaws.com:/ /mnt/e0
 # or
 # sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 10.50.250.168:/ /mnt/e0
 
 # Mounting automatically at boot time
-# us-east-1a.fs-a449faed.efs.us-east-1.amazonaws.com:/ /mnt/e0 nfs4 rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0
-# or
-# fs-a449faed.efs.us-east-1.amazonaws.com:/ /mnt/e0 nfs4 rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0
+# Edit /etc/fstab and add at the end:
+# us-east-1a.fs-ae4efde7.efs.us-east-1.amazonaws.com:/ /mnt/e0 nfs4 rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0
+# or simply
+# fs-ae4efde7.efs.us-east-1.amazonaws.com:/ /mnt/e0 nfs4 rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0
 
 
 
