@@ -277,9 +277,30 @@ jmespath.search('InstanceStatuses[*].[SystemStatus.Status,InstanceStatus.Status]
 
 
 
+# Another cycle. Creation of snapshot of formosa-02 and new image formosa-03
 
+####################
+# Clean up
+####################
 
+# Identify images (and their source snapshots) in my account
+pd.DataFrame(  jmespath.search('Images[*][ImageId, CreationDate, Name, BlockDeviceMappings[][Ebs][].SnapshotId, BlockDeviceMappings[][Ebs][].VolumeSize, Tags[?Key==`Name`].Value,Description]', ec2cl.describe_images(Filters=[{'Name':'owner-id', 'Values':['406215614988']}]))  )
+#                0                         1                                   2                         3      4                            5                                                  6
+# 0   ami-08fc331e  2017-02-13T20:32:28.000Z                 Boomi Molecule Node  [snap-09f06db5aaf1cba6b]    [8]  [Boomi Molecule Node Image]  Image for Boomi Molecule node with EFS and upd...
+# 1   ami-0e0b1f19  2016-12-21T12:10:47.000Z                 CST_OEL_6.7_GOLDAMI  [snap-0da5e3e6d4d932346]  [100]        [CST_OEL_6.7_GOLDAMI]                                CST_OEL_6.7_GOLDAMI
+# 2   ami-1c70f60a  2017-04-03T20:02:34.000Z                       SCPD-CORE-TMP           [snap-f812b766]  [100]                         None                          temp image to debug mount
+# 3   ami-3dcf382b  2017-01-23T17:16:19.000Z    Oracle_AA_10.50.251.44_23JAN2017  [snap-0ac102177bc4e6795]  [100]                         None                   Oracle_AA_10.50.251.44_23JAN2017
+# 4   ami-52e47144  2017-04-13T19:17:29.000Z                          formosa-00  [snap-0772a2dbbeb46d566]   [96]                 [formosa-00]                Fedora 25 for Computational Biology
+# 5   ami-5ca7334a  2017-04-14T19:46:44.000Z                          formosa-01  [snap-0321e8cd56c0aa5c3]   [96]                 [formosa-01]                Fedora 25 for Computational Biology
+# 6   ami-800cba96  2017-03-21T18:18:54.000Z                           SCPD-CORE           [snap-048e118d]  [100]                         None                                                   
+# 7   ami-81e77297  2017-04-13T19:47:55.000Z  CameronLamdaDevEc2WithOracleClient           [snap-6ee5b395]    [8]                         None  Cameron's lambda development ec2.  includes Or...
+# 8   ami-95f04183  2017-03-21T19:03:21.000Z                        SCPD-CORE-v2           [snap-cc3bbe44]  [100]                         None                                                   
+# 9   ami-e09240f6  2017-02-24T18:46:54.000Z                     SCPD-JIRA-IMAGE           [snap-eb5d37f7]  [100]                         None                                         test image
+# 10  ami-f0cd66e6  2017-03-16T18:38:36.000Z                   SCPD-CORE-CENTOS7  [snap-03e0576d045292c46]  [100]                         None                                                   
 
+# Deregister deprecated image and delete its source snapshot
+# ec2cl.deregister_image(ImageId='ami-52e47144')
+# ec2cl.delete_snapshot(SnapshotId='snap-0772a2dbbeb46d566')
 
 
 
@@ -308,7 +329,14 @@ jmespath.search('[].Ebs[].VolumeId | [0]', my_ec2instance.block_device_mappings)
 # Identify snapshots by OwnerId, VolumeSize and Tag
 jmespath.search('Snapshots[*] | [?OwnerId==`"406215614988"`] | [?VolumeSize==`100`] | [?Tags[?Key==`Name` && Value==`CST_OEL_6.7_GOLDAMI_ROOT_DO NOT DELETE`]]', ec2cl.describe_snapshots())
 
-# Identify Images
+# Identify snapshots by one Tag filtered at the server side and display pretty
+pd.DataFrame(  jmespath.search('Snapshots[*][SnapshotId,StartTime,Tags[?Key==`Name`].Value,Description]', ec2cl.describe_snapshots(Filters=[{'Name':'tag:Department', 'Values':['Computational Biology Research']}]))  )
+
+# Identify Images, first client side and then server side
 jmespath.search('Images[*] | [?OwnerId==`"406215614988"`] | [?!( Public )]', ec2cl.describe_images())
+jmespath.search('Images[*] | [?!( Public )]', ec2cl.describe_images(   Filters=[{'Name':'owner-id', 'Values':['406215614988']}]   ))
+
+# Identify images owned by my account; display pretty
+pd.DataFrame(  jmespath.search('Images[*][ImageId, CreationDate, Name, BlockDeviceMappings[][Ebs][].SnapshotId, BlockDeviceMappings[][Ebs][].VolumeSize, Tags[?Key==`Name`].Value, Description]', ec2cl.describe_images(Filters=[{'Name':'owner-id', 'Values':['406215614988']}]))  )
 
 
