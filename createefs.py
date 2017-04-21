@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Ivan Gregoretti, PhD. March 2017.
+# Ivan Gregoretti, PhD. April 2017.
 
 import subprocess
 import boto3
@@ -102,9 +102,9 @@ else:
     print('Security group ' + my_security_group_name + ' does not exist. Creating it...')
 
     # Create a security group
-    my_security_group = ec2re.create_security_group(GroupName=my_security_group_name, Description='Allows access to Computational Biology Research', VpcId=my_vpcid)
+    my_security_group = ec2re.create_security_group(GroupName=my_security_group_name, Description='Allows access to Computational Biology Research Instances', VpcId=my_vpcid)
     # Add a tag
-    my_security_group.create_tags(Tags=[{'Key': 'Name', 'Value': my_security_group_name + '-name'}, {'Key':'Owner', 'Value':iam_user_name}, {'Key': 'Department', 'Value': 'Computational Biology Research'}])
+    my_security_group.create_tags(Tags=[{'Key': 'Name', 'Value': my_security_group_name}, {'Key':'Owner', 'Value':iam_user_name}, {'Key': 'Department', 'Value': 'Computational Biology Research'}])
     # Set security group attributes
     my_security_group.authorize_ingress(IpPermissions=[{'IpProtocol':'tcp', 'FromPort':22, 'ToPort':22, 'IpRanges':[{'CidrIp':'10.10.6.0/24'},{'CidrIp': my_ip + '/32'}]}])
 
@@ -137,7 +137,7 @@ else:
     # Create a security group
     my_security_group_efs = ec2re.create_security_group(GroupName=my_security_group_efs_name, Description='Allows access to Computational Biology Research EFS', VpcId=my_vpcid)
     # Add a tag
-    my_security_group_efs.create_tags(Tags=[{'Key': 'Name', 'Value': my_security_group_efs_name + '-name'}, {'Key':'Owner', 'Value':iam_user_name}, {'Key': 'Department', 'Value': 'Computational Biology Research'}])
+    my_security_group_efs.create_tags(Tags=[{'Key': 'Name', 'Value': my_security_group_efs_name}, {'Key':'Owner', 'Value':iam_user_name}, {'Key': 'Department', 'Value': 'Computational Biology Research'}])
     # Set security group attributes
     my_security_group_efs.authorize_ingress(IpPermissions=[
         {
@@ -176,6 +176,8 @@ jmespath.search('SecurityGroups[*].[GroupId,GroupName]', ec2cl.describe_security
 
 
 # If desired, delete the security groups
+# Note: As it is, my_security_group cannot be deleted because it is referenced
+# by my_security_group_efs.
 #ec2cl.delete_security_group(GroupId=my_security_group.id    )
 #ec2cl.delete_security_group(GroupId=my_security_group_efs.id)
 

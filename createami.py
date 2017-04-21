@@ -64,7 +64,7 @@ s3cl= se1.client(  's3')
 
 
 ################################################################################
-# Identify or create security group
+# Identify or create security groups
 ################################################################################
 
 # Identify my own IP address
@@ -95,7 +95,7 @@ else:
     # Create a security group
     my_security_group = ec2re.create_security_group(GroupName=my_security_group_name, Description='Allows access to Computational Biology Research Instances', VpcId=my_vpcid)
     # Add a tag
-    my_security_group.create_tags(Tags=[{'Key': 'Name', 'Value': my_security_group_name + '-name'}, {'Key':'Owner', 'Value':iam_user_name}, {'Key': 'Department', 'Value': 'Computational Biology Research'}])
+    my_security_group.create_tags(Tags=[{'Key': 'Name', 'Value': my_security_group_name}, {'Key':'Owner', 'Value':iam_user_name}, {'Key': 'Department', 'Value': 'Computational Biology Research'}])
     # Set security group attributes
     my_security_group.authorize_ingress(IpPermissions=[{'IpProtocol':'tcp', 'FromPort':22, 'ToPort':22, 'IpRanges':[{'CidrIp':'10.10.6.0/24'},{'CidrIp': my_ip + '/32'}]}])
 
