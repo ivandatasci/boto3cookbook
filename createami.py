@@ -97,7 +97,7 @@ else:
     # Add a tag
     my_security_group.create_tags(Tags=[{'Key': 'Name', 'Value': my_security_group_name}, {'Key':'Owner', 'Value':iam_user_name}, {'Key': 'Department', 'Value': 'Computational Biology Research'}])
     # Set security group attributes
-    my_security_group.authorize_ingress(IpPermissions=[{'IpProtocol':'tcp', 'FromPort':22, 'ToPort':22, 'IpRanges':[{'CidrIp':'10.10.6.0/24'},{'CidrIp': my_ip + '/32'}]}])
+    my_security_group.authorize_ingress(IpPermissions=[{'IpProtocol':'tcp', 'FromPort':22, 'ToPort':22, 'IpRanges':[{'CidrIp':'10.10.6.0/24'},{'CidrIp':'10.100.100.0/24'},{'CidrIp': my_ip + '/32'}]}])
 
     print('Security group ' + my_security_group.group_name + ' has now been created.')
 
