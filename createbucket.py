@@ -81,15 +81,31 @@ my_s3bucket.put_object(Key='tmp/')
 
 
 # Create subdirectories
-my_s3bucket.put_object(Key='home/ivan.gregoretti@cellsignal.com/')
-my_s3bucket.put_object(Key='home/stephen.brinton@cellsignal.com/')
-my_s3bucket.put_object(Key='home/sean.landry@cellsignal.com/'    )
-my_s3bucket.put_object(Key='snapshots/ivan.gregoretti@cellsignal.com/')
-my_s3bucket.put_object(Key='snapshots/stephen.brinton@cellsignal.com/')
-my_s3bucket.put_object(Key='snapshots/sean.landry@cellsignal.com/'    )
-my_s3bucket.put_object(Key='scratch/ivan.gregoretti@cellsignal.com/')
-my_s3bucket.put_object(Key='scratch/stephen.brinton@cellsignal.com/')
-my_s3bucket.put_object(Key='scratch/sean.landry@cellsignal.com/'    )
+my_s3bucket.put_object(Key='home/ivan.gregoretti@cellsignal.com/'        )
+my_s3bucket.put_object(Key='home/stephen.brinton@cellsignal.com/'        )
+my_s3bucket.put_object(Key='home/sean.landry@cellsignal.com/'            )
+my_s3bucket.put_object(Key='home/elizabeth.kolacz@cellsignal.com/'       )
+my_s3bucket.put_object(Key='home/yuichi.nishi@cellsignal.com/'           )
+my_s3bucket.put_object(Key='home/raphael.rozenfeld@cellsignal.com/'      )
+my_s3bucket.put_object(Key='home/florian.gnad@cellsignal.com/'           )
+
+
+my_s3bucket.put_object(Key='snapshots/ivan.gregoretti@cellsignal.com/'  )
+my_s3bucket.put_object(Key='snapshots/stephen.brinton@cellsignal.com/'  )
+my_s3bucket.put_object(Key='snapshots/sean.landry@cellsignal.com/'      )
+my_s3bucket.put_object(Key='snapshots/elizabeth.kolacz@cellsignal.com/' )
+my_s3bucket.put_object(Key='snapshots/yuichi.nishi@cellsignal.com/'     )
+my_s3bucket.put_object(Key='snapshots/raphael.rozenfeld@cellsignal.com/')
+my_s3bucket.put_object(Key='snapshots/florian.gnad@cellsignal.com/'     )
+
+
+my_s3bucket.put_object(Key='scratch/ivan.gregoretti@cellsignal.com/'    )
+my_s3bucket.put_object(Key='scratch/stephen.brinton@cellsignal.com/'    )
+my_s3bucket.put_object(Key='scratch/sean.landry@cellsignal.com/'        )
+my_s3bucket.put_object(Key='scratch/elizabeth.kolacz@cellsignal.com/'   )
+my_s3bucket.put_object(Key='scratch/yuichi.nishi@cellsignal.com/'       )
+my_s3bucket.put_object(Key='scratch/raphael.rozenfeld@cellsignal.com/'  )
+my_s3bucket.put_object(Key='scratch/florian.gnad@cellsignal.com/'       )
 
 
 
@@ -200,7 +216,7 @@ iamcl.delete_policy(PolicyArn=my_iampolicy.arn)
 # Attach Policy to a Group of users
 ################################################################################
 
-#iamre.Group(name='compbio-research-group').attach_policy(PolicyArn=my_iampolicy.arn)
+#iamre.Group(name='compbio-research-group-00').attach_policy(PolicyArn=my_iampolicy.arn)
 # Note: The command above is not executed at the moment because the members of
 # this group already have AmazonS3FullAccess.
 
