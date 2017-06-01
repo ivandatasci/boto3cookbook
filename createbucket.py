@@ -121,7 +121,7 @@ my_s3bucket.put_object(Key='scratch/florian.gnad@cellsignal.com/'       )
 # whom the policy is attached.
 my_policy_json = json.dumps(
 {
-    "Version":"2012-10-17",
+    "Version": "2012-10-17",
     "Statement": [
         {
             "Sid": "1AllowSeeingBucketsList",
@@ -144,7 +144,7 @@ my_policy_json = json.dumps(
         {
             "Sid": "3AllowListingAndGetAndPutAndDelTmp",
             "Effect": "Allow",
-            "Action": [ "s3:GetObject", "s3:GetObjectTagging", "s3:PutObject", "s3:PutObjectTagging" , "s3:DeleteObject", "s3:DeleteObjectTagging"],
+            "Action": [ "s3:GetObject", "s3:GetObjectTagging", "s3:PutObject", "s3:PutObjectTagging", "s3:DeleteObject", "s3:DeleteObjectTagging"],
             "Resource": [ "arn:aws:s3:::" + my_s3bucket.name + "/tmp/*" ]
         },
         {
