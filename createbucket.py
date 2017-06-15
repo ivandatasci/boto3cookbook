@@ -130,34 +130,45 @@ my_policy_json = json.dumps(
             "Resource": [ "arn:aws:s3:::*" ]
         },
         {
-            "Sid": "2AllowRootLevelListingOfThisBucketAndItsDirectories",
+            "Sid": "2AllowRootLevelListingOfThisBucketAndItsMainDirectories",
             "Effect": "Allow",
             "Action": [ "s3:ListBucket" ],
-            "Resource": [ "arn:aws:s3:::" + my_s3bucket.name ],
+            "Resource": [ "arn:aws:s3:::cst-compbio-research-00-buc" ],
             "Condition": {
-                "StringLike": {
-                    "s3:prefix": ["", "home/", "home/${aws:username}/", "snapshots/", "snapshots/*", "scratch/", "scratch/*", "tmp/", "tmp/*"],
+                "StringEquals": {
+                    "s3:prefix": [ "", "home/" ],
                     "s3:delimiter": [ "/" ]
                 }
             }
         },
         {
-            "Sid": "3AllowListingAndGetAndPutAndDelTmp",
+            "Sid": "3AllowUserListingOfUsersOwnHomeAndEverybodysSnapshotAndScratchAndTmp",
             "Effect": "Allow",
-            "Action": [ "s3:GetObject", "s3:GetObjectTagging", "s3:PutObject", "s3:PutObjectTagging", "s3:DeleteObject", "s3:DeleteObjectTagging"],
-            "Resource": [ "arn:aws:s3:::" + my_s3bucket.name + "/tmp/*" ]
+            "Action": [ "s3:ListBucket" ],
+            "Resource": [ "arn:aws:s3:::cst-compbio-research-00-buc" ],
+            "Condition": {
+                "StringLike": {
+                    "s3:prefix": [ "home/${aws:username}/*", "snapshots/*", "scratch/*", "tmp/*" ]
+                }
+            }
         },
         {
-            "Sid": "4AllowGetSnapshotsAndScratch",
+            "Sid": "4AllowGetAndPutAndDelTmp",
+            "Effect": "Allow",
+            "Action": [ "s3:GetObject", "s3:GetObjectTagging", "s3:PutObject", "s3:PutObjectTagging", "s3:DeleteObject", "s3:DeleteObjectTagging" ],
+            "Resource": [ "arn:aws:s3:::cst-compbio-research-00-buc/tmp/*" ]
+        },
+        {
+            "Sid": "5AllowGetSnapshotsAndScratch",
             "Effect": "Allow",
             "Action": [ "s3:GetObject", "s3:GetObjectTagging", "s3:GetObjectVersion", "s3:GetObjectVersionTagging" ],
-            "Resource": [ "arn:aws:s3:::" + my_s3bucket.name + "/snapshots/*", "arn:aws:s3:::" + my_s3bucket.name + "/scratch/*" ]
+            "Resource": [ "arn:aws:s3:::cst-compbio-research-00-buc/snapshots/*", "arn:aws:s3:::cst-compbio-research-00-buc/scratch/*" ]
         },
         {
-            "Sid": "5AllowEverythingInUsersOwnHomeAndSnapshotsAndScratch",
+            "Sid": "6AllowEverythingInUsersOwnHomeAndSnapshotsAndScratch",
             "Effect": "Allow",
             "Action": [ "s3:*" ],
-            "Resource": [ "arn:aws:s3:::" + my_s3bucket.name + "/home/${aws:username}/*", "arn:aws:s3:::" + my_s3bucket.name + "/snapshots/${aws:username}/*", "arn:aws:s3:::" + my_s3bucket.name + "/scratch/${aws:username}/*" ]
+            "Resource": [ "arn:aws:s3:::cst-compbio-research-00-buc/home/${aws:username}/*", "arn:aws:s3:::cst-compbio-research-00-buc/snapshots/${aws:username}/*", "arn:aws:s3:::cst-compbio-research-00-buc/scratch/${aws:username}/*" ]
         }
     ]
 }
