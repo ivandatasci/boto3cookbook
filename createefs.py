@@ -8,7 +8,7 @@ import jmespath
 import datetime # Usage: execute datetime.datetime.now(datetime.timezone.utc); then instead of tzinfo=tzutc() use tzinfo=datetime.timezone.utc.
 import pandas as pd
 
-pd.set_option('display.width', 270)
+pd.set_option("display.width", None)
 
 
 ################################################################################
