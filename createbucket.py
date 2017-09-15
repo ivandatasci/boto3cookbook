@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Ivan Gregoretti, PhD. April 2017.
+# Ivan Gregoretti, PhD. June 2017.
 
 import subprocess
 import boto3
@@ -7,6 +7,8 @@ import json
 import jmespath
 import datetime # Usage: execute datetime.datetime.now(datetime.timezone.utc); then instead of tzinfo=tzutc() use tzinfo=datetime.timezone.utc.
 import pandas as pd
+import os
+import time
 
 
 
@@ -74,38 +76,38 @@ s3re.BucketTagging( bucket_name=my_s3bucket.name ).put( Tagging={'TagSet': [
 
 
 # Create directories
-my_s3bucket.put_object(Key='home/')
-my_s3bucket.put_object(Key='snapshots/')
-my_s3bucket.put_object(Key='scratch/')
-my_s3bucket.put_object(Key='tmp/')
+my_s3bucket.put_object(Key='home/'     , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'1000', 'gid':'1000'})
+my_s3bucket.put_object(Key='snapshots/', ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'1000', 'gid':'1000'})
+my_s3bucket.put_object(Key='scratch/'  , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'1000', 'gid':'1000'})
+my_s3bucket.put_object(Key='tmp/'      , ContentType='directory', Metadata={'mmode':'509'  , 'mtime':str(int(time.time())), 'uid':'1000', 'gid':'1000'})
 
 
 # Create subdirectories
-my_s3bucket.put_object(Key='home/ivan.gregoretti@cellsignal.com/'        )
-my_s3bucket.put_object(Key='home/stephen.brinton@cellsignal.com/'        )
-my_s3bucket.put_object(Key='home/sean.landry@cellsignal.com/'            )
-my_s3bucket.put_object(Key='home/elizabeth.kolacz@cellsignal.com/'       )
-my_s3bucket.put_object(Key='home/yuichi.nishi@cellsignal.com/'           )
-my_s3bucket.put_object(Key='home/raphael.rozenfeld@cellsignal.com/'      )
-my_s3bucket.put_object(Key='home/florian.gnad@cellsignal.com/'           )
+my_s3bucket.put_object(Key='home/ivan.gregoretti@cellsignal.com/'       , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6799', 'gid':'6799'})
+my_s3bucket.put_object(Key='home/stephen.brinton@cellsignal.com/'       , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6810', 'gid':'6810'})
+my_s3bucket.put_object(Key='home/sean.landry@cellsignal.com/'           , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6812', 'gid':'6812'})
+my_s3bucket.put_object(Key='home/elizabeth.kolacz@cellsignal.com/'      , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6802', 'gid':'6802'})
+my_s3bucket.put_object(Key='home/yuichi.nishi@cellsignal.com/'          , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6813', 'gid':'6813'})
+my_s3bucket.put_object(Key='home/raphael.rozenfeld@cellsignal.com/'     , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6816', 'gid':'6816'})
+my_s3bucket.put_object(Key='home/florian.gnad@cellsignal.com/'          , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6818', 'gid':'6818'})
 
 
-my_s3bucket.put_object(Key='snapshots/ivan.gregoretti@cellsignal.com/'  )
-my_s3bucket.put_object(Key='snapshots/stephen.brinton@cellsignal.com/'  )
-my_s3bucket.put_object(Key='snapshots/sean.landry@cellsignal.com/'      )
-my_s3bucket.put_object(Key='snapshots/elizabeth.kolacz@cellsignal.com/' )
-my_s3bucket.put_object(Key='snapshots/yuichi.nishi@cellsignal.com/'     )
-my_s3bucket.put_object(Key='snapshots/raphael.rozenfeld@cellsignal.com/')
-my_s3bucket.put_object(Key='snapshots/florian.gnad@cellsignal.com/'     )
+my_s3bucket.put_object(Key='snapshots/ivan.gregoretti@cellsignal.com/'  , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6799', 'gid':'6799'})
+my_s3bucket.put_object(Key='snapshots/stephen.brinton@cellsignal.com/'  , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6810', 'gid':'6810'})
+my_s3bucket.put_object(Key='snapshots/sean.landry@cellsignal.com/'      , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6812', 'gid':'6812'})
+my_s3bucket.put_object(Key='snapshots/elizabeth.kolacz@cellsignal.com/' , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6802', 'gid':'6802'})
+my_s3bucket.put_object(Key='snapshots/yuichi.nishi@cellsignal.com/'     , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6813', 'gid':'6813'})
+my_s3bucket.put_object(Key='snapshots/raphael.rozenfeld@cellsignal.com/', ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6816', 'gid':'6816'})
+my_s3bucket.put_object(Key='snapshots/florian.gnad@cellsignal.com/'     , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6818', 'gid':'6818'})
 
 
-my_s3bucket.put_object(Key='scratch/ivan.gregoretti@cellsignal.com/'    )
-my_s3bucket.put_object(Key='scratch/stephen.brinton@cellsignal.com/'    )
-my_s3bucket.put_object(Key='scratch/sean.landry@cellsignal.com/'        )
-my_s3bucket.put_object(Key='scratch/elizabeth.kolacz@cellsignal.com/'   )
-my_s3bucket.put_object(Key='scratch/yuichi.nishi@cellsignal.com/'       )
-my_s3bucket.put_object(Key='scratch/raphael.rozenfeld@cellsignal.com/'  )
-my_s3bucket.put_object(Key='scratch/florian.gnad@cellsignal.com/'       )
+my_s3bucket.put_object(Key='scratch/ivan.gregoretti@cellsignal.com/'    , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6799', 'gid':'6799'})
+my_s3bucket.put_object(Key='scratch/stephen.brinton@cellsignal.com/'    , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6810', 'gid':'6810'})
+my_s3bucket.put_object(Key='scratch/sean.landry@cellsignal.com/'        , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6812', 'gid':'6812'})
+my_s3bucket.put_object(Key='scratch/elizabeth.kolacz@cellsignal.com/'   , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6802', 'gid':'6802'})
+my_s3bucket.put_object(Key='scratch/yuichi.nishi@cellsignal.com/'       , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6813', 'gid':'6813'})
+my_s3bucket.put_object(Key='scratch/raphael.rozenfeld@cellsignal.com/'  , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6816', 'gid':'6816'})
+my_s3bucket.put_object(Key='scratch/florian.gnad@cellsignal.com/'       , ContentType='directory', Metadata={'mmode':'16877', 'mtime':str(int(time.time())), 'uid':'6818', 'gid':'6818'})
 
 
 
