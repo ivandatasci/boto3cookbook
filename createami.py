@@ -831,8 +831,23 @@ ec2re.Volume(  my_ec2volume_id  ).create_tags(Tags=[{'Key':'Name', 'Value':my_ec
 my_ec2instance.reload()
 jmespath.search('InstanceStatuses[*].[SystemStatus.Status,InstanceStatus.Status] | []', ec2cl.describe_instance_status(InstanceIds=[my_ec2instance.id]))
 
-### LEFT HERE ###
+# Re-launch formosa-12 (from formosa-11's AMI) but use a larger machine type r4.2xlarge
+my_keypair = ec2re.KeyPair('kp-compbio0')
+my_ec2instance = ec2re.create_instances(ImageId='ami-8e866bf4',
+        MinCount=1, MaxCount=1,
+        KeyName=my_keypair.name,
+        InstanceType='r4.2xlarge',
+        BlockDeviceMappings=[{'DeviceName':'/dev/sda1', 'Ebs':{'VolumeSize':60, 'DeleteOnTermination':True, 'VolumeType':'gp2'}}],
+        NetworkInterfaces=[{'SubnetId':my_subnetid_df.loc['us-east-1a','Public'], 'Groups':[my_security_group.id], 'DeviceIndex':0, 'AssociatePublicIpAddress':True}],
+        InstanceInitiatedShutdownBehavior='terminate'
+        )[0]
+my_ec2instance.create_tags(Tags=[{'Key':'Name', 'Value':'formosa-12'},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
+my_ec2instance.wait_until_exists(Filters=[{'Name':'block-device-mapping.status','Values':['attached']}])
+my_ec2volume_id = my_ec2instance.block_device_mappings[0]['Ebs']['VolumeId']
+my_ec2volume_name = jmespath.search('[?Key==`Name`].Value | [0]', my_ec2instance.tags) + '-vol'
+ec2re.Volume(  my_ec2volume_id  ).create_tags(Tags=[{'Key':'Name', 'Value':my_ec2volume_name},{'Key':'Owner', 'Value':iam_user_name},{'Key':'Department', 'Value':'Computational Biology Research'}])
 
+### LEFT HERE ###
 
 
 
